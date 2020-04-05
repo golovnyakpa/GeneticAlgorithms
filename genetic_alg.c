@@ -4,6 +4,7 @@
 #include <math.h>
 #include <time.h>
 #include <stdint.h>
+#include <time.h>
 /*
 for(i=0; i<n; i++)
 	printf("%f\n", probabilities[i]);
@@ -63,7 +64,7 @@ float sum_value_of_all_fitnesses(individual* population, int n){
 
 void define_probabilities(individual* population, int n, float sum_of_all_fitnesses){
 	for(int i=0; i<n; i++)
-		population[i].probability = population[i].loss_function_value / sum_of_all_fitnesses;
+		population[i].probability = 1 - (population[i].loss_function_value / sum_of_all_fitnesses);
 	
 }
 
@@ -169,70 +170,82 @@ void mutation(individual* intermidiate_population,int n, int bits_num){
 	}
 }
 
-float get_max(individual* population, int n, int bits_num){
-	float max = population[0].loss_function_value;
+float get_min(individual* population, int n, int bits_num){
+	float min = population[0].loss_function_value;
 	for(int i=0; i<n; i++)
 	{
-		if (population[i].loss_function_value>max)
-			max = population[i].loss_function_value;
+		if (population[i].loss_function_value<min)
+			min = population[i].loss_function_value;
 	}
-	return max;
+	return min;
 }
 
-// void intermidiate_population_to_new_population(individual* population, individual* intermidiate_population, int n, float min_f_value){
-// 	// Промежуточная популяция становится новой. Также происходит денормалзация, т.е. от всех 
-// 	// значений фитнесс функций вычитается минимальное значение
-// 	for(int i=0; i<n; i++)
-// 	{
-// 		population[i].loss_function_value = intermidiate_population[i].loss_function_value + min_f_value;
-// 		population[i].loss_function_value = intermidiate_population[i].loss_function_value + min_f_value;
-// 	}
-	
-// }
+void write_csv(int n, double time, float res){
+	FILE *fp;
+	fp=fopen("out_population.csv", "a+");
+	if(fp != NULL){
+		fprintf(fp, "%d;%f;%f\n",n,time,res);
+		fclose(fp);
+	}else{
+		printf("ERROR READING FILE\n");
+	}
+}
+
+static double diffclock(clock_t clock1,clock_t clock2)
+{
+    double diffticks=clock1-clock2;
+    double diffms=(diffticks)/(CLOCKS_PER_SEC);
+    return diffms;
+}
 
 
 int main(){
-	int n = 500;
+	clock_t start, end;
+	int n = 400;
 	int bits_num = define_number_of_bits(3);
 	int cuts_num = pow(2, bits_num);
-	individual *population = (individual*) malloc(n * sizeof(individual));
-	individual *intermidiate_population = (individual*) malloc(n * sizeof(individual));
-    create_population(n, population, 0, cuts_num);
-    for(int j=0; j<30;j++)
+    for(int k=0; k<8; k++)
     {
-    	 create_population(n, population, 0, cuts_num);
-	    for(int i=0; i<1000; i++)
+    	n += 100;
+    	individual *population = (individual*) malloc(n * sizeof(individual));
+		individual *intermidiate_population = (individual*) malloc(n * sizeof(individual));	
+	    for(int j=0; j<10;j++)
 	    {
-	    	// начало репродукции
-			float min_f_value = calculte_loss_function_for_individuals(population, n, bits_num);
-			//printf("%f\n", int_to_float(population[5].loss_function_value, bits_num));
-			if (min_f_value < 0)
-				normalize_all_f_values(population, n, min_f_value);
-			float sum = sum_value_of_all_fitnesses(population, n);
-			define_probabilities(population, n, sum);
-			create_intermidiate_population(population, n, intermidiate_population);
+	    	start =clock();
+	    	create_population(n, population, 0, cuts_num);
+		    for(int i=0; i<1000; i++)
+		    {
+		    	// начало репродукции
+				float min_f_value = calculte_loss_function_for_individuals(population, n, bits_num);
+				//printf("%f\n", int_to_float(population[5].loss_function_value, bits_num));
+				if (min_f_value < 0)
+					normalize_all_f_values(population, n, min_f_value);
+				float sum = sum_value_of_all_fitnesses(population, n);
+				define_probabilities(population, n, sum);
+				create_intermidiate_population(population, n, intermidiate_population);
 
-			/*
-			Стадия репродукции окончена. Далее следуют стадии кроссинговера
-			и мутации 
-			*/
-			crossingover(intermidiate_population, n, bits_num);
-			mutation(intermidiate_population, n, bits_num);
-			if (min_f_value > 0)
-				min_f_value = 0;
-			individual *temp = intermidiate_population;
-			intermidiate_population = population;
-			population = temp;
-			if (min_f_value < 0)
-				denormalize_all_f_values(population, n, min_f_value);
-		}
-    
-		float res = get_max(population, n, bits_num);
-		printf("%f\n", res);
+				/*
+				Стадия репродукции окончена. Далее следуют стадии кроссинговера
+				и мутации 
+				*/
+				crossingover(intermidiate_population, n, bits_num);
+				mutation(intermidiate_population, n, bits_num);
+				if (min_f_value > 0)
+					min_f_value = 0;
+				individual *temp = intermidiate_population;
+				intermidiate_population = population;
+				population = temp;
+				if (min_f_value < 0)
+					denormalize_all_f_values(population, n, min_f_value);
+			}
+	    	end = clock();
+	    	float res = get_min(population, n, bits_num);
+			double time = diffclock(end, start);
+			write_csv(n, time, res);
+	    }
+	    free(intermidiate_population);
+	    free(population);
+	
     }
-	//ntermidiate_population_to_new_population(population, intermidiate_population, n, min_f_value);
-	//
-    //for(int i=0; i<n; i++)
-	//    printf("%f\n", probabilities[i]);
 	return 0;
 }
