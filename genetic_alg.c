@@ -5,10 +5,6 @@
 #include <time.h>
 #include <stdint.h>
 #include <time.h>
-/*
-for(i=0; i<n; i++)
-	printf("%f\n", probabilities[i]);
- */
 
 const uint64_t zero_and_one_vecs[64] = {0x1,0x3,0x7,0xf,0x1f,0x3f,0x7f,0xff, 0x1ff,0x3ff,0x7ff,0xfff,0x1fff,0x3fff,0x7fff,
 	                        0xffff,0x1ffff,0x3ffff,0x7ffff,0xfffff,0x1fffff,0x3fffff,0x7fffff,0xffffff, 0x1ffffff,
@@ -126,7 +122,6 @@ void create_intermidiate_population(individual* population,int n, individual* in
 }
 
 
-// не проверял
 void swap_bits(individual* chromosome_1, individual* chromosome_2,int k){
 	int x_1 = chromosome_1->value & zero_and_one_vecs[k];
 	int x_2 = chromosome_2->value & zero_and_one_vecs[k];
@@ -135,11 +130,6 @@ void swap_bits(individual* chromosome_1, individual* chromosome_2,int k){
 	chromosome_2->value &= (~zero_and_one_vecs[k]);
 	chromosome_2->value |= x_1; 
 
-	// uint64_t x1=vector[x]&cross[z],x2=vector[y]&cross[z];
-	// vector[x] &= (~cross[z]);
-	// vector[y] &= (~cross[z]);
-	// vector[x] |= x2;
-	// vector[y] |= x1;
 }
 
 void crossingover(individual* intermidiate_population,int n, int bits_num){
